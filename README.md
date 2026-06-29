@@ -6,6 +6,18 @@
 
 线上地址：[https://super-lotto-trend-model.onrender.com](https://super-lotto-trend-model.onrender.com)
 
+## 宣传图预览
+
+小红书配图和文案在 [`promo`](promo) 目录。
+
+<p>
+  <img src="promo/xhs-01-cover.png" width="180" alt="超级大乐透小红书封面" />
+  <img src="promo/xhs-02-data-update.png" width="180" alt="实时数据更新" />
+  <img src="promo/xhs-03-trend-analysis.png" width="180" alt="走势分析" />
+  <img src="promo/xhs-04-smart-recommend.png" width="180" alt="智能推荐" />
+  <img src="promo/xhs-05-hot-cold.png" width="180" alt="冷热遗漏" />
+</p>
+
 ## 本地运行
 
 ```bash
@@ -38,5 +50,10 @@ PORT=4174 npm run start
 
 - `public/donate/alipay-qr.jpg`
 - `public/donate/wechat-qr.jpg`
+
+<p>
+  <img src="public/donate/alipay-qr.jpg" width="220" alt="支付宝打赏二维码" />
+  <img src="public/donate/wechat-qr.jpg" width="220" alt="微信打赏二维码" />
+</p>
 
 替换收款码时，保持文件名不变即可；也可以换成 PNG/SVG，但要同步修改 `src/App.tsx` 里的图片路径。
