@@ -103,7 +103,7 @@ function App() {
     <div className="app-shell">
       <aside className="side-rail" aria-label="主导航">
         <div className="brand-mark">
-          <span>体彩</span>
+          <span className="leo-logo" aria-label="LEO logo">LEO</span>
           <strong>超级大乐透</strong>
         </div>
         <nav>
@@ -144,9 +144,12 @@ function App() {
 
       <main>
         <header className="topbar">
-          <div>
-            <h1>超级大乐透走势预测</h1>
-            <p>前区35选5 + 后区12选2，多变量特征工程与可视化复盘</p>
+          <div className="title-lockup">
+            <span className="leo-logo leo-logo--topbar" aria-label="LEO logo">LEO</span>
+            <div className="title-copy">
+              <h1>超级大乐透走势预测</h1>
+              <p>前区35选5 + 后区12选2，多变量特征工程与可视化复盘</p>
+            </div>
           </div>
           <div className="topbar-actions">
             <div className="data-chip" data-stale={status.stale}>

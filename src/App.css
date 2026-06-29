@@ -20,20 +20,30 @@
 
 .brand-mark {
   display: grid;
-  gap: 4px;
+  gap: 7px;
   padding: 10px 8px 14px;
   border-bottom: 1px solid #eef2f7;
 }
 
-.brand-mark span {
-  width: fit-content;
-  padding: 2px 6px;
-  border: 1px solid #dbeafe;
-  border-radius: 6px;
-  color: #1457c8;
-  font-size: 12px;
-  font-weight: 700;
-  line-height: 1.4;
+.leo-logo {
+  width: 60px;
+  height: 34px;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  background: linear-gradient(135deg, #1457c8 0%, #dc2626 100%);
+  font-size: 15px;
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: 0;
+  box-shadow: 0 10px 22px rgba(20, 87, 200, 0.22);
+}
+
+.leo-logo--topbar {
+  width: 62px;
+  height: 38px;
 }
 
 .brand-mark strong {
@@ -104,6 +114,17 @@ main {
   font-size: 24px;
   font-weight: 800;
   line-height: 1.2;
+}
+
+.title-lockup {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.title-copy {
+  min-width: 0;
 }
 
 .topbar p,
@@ -902,6 +923,10 @@ tbody tr:hover {
 
   .topbar h1 {
     font-size: 21px;
+  }
+
+  .title-lockup {
+    align-items: flex-start;
   }
 
   .topbar-actions,
