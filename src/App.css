@@ -220,6 +220,56 @@ main {
   background: #fff7ed;
 }
 
+.legal-disclaimer {
+  display: grid;
+  grid-template-columns: minmax(156px, 0.24fr) minmax(0, 1fr);
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 14px;
+  padding: 14px 16px;
+  border: 2px solid #f59e0b;
+  border-left: 8px solid #dc2626;
+  border-radius: 8px;
+  color: #7f1d1d;
+  background: #fff7ed;
+  box-shadow: 0 14px 34px rgba(220, 38, 38, 0.12);
+}
+
+.legal-disclaimer__badge {
+  min-height: 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 9px 12px;
+  border-radius: 8px;
+  color: #ffffff;
+  background: #dc2626;
+  font-size: 15px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.legal-disclaimer p {
+  min-width: 0;
+  margin: 0;
+  color: #7f1d1d;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+}
+
+.legal-disclaimer strong {
+  display: block;
+  color: #991b1b;
+  font-size: 16px;
+}
+
+.legal-disclaimer p span {
+  display: block;
+}
+
 .status-strip {
   display: flex;
   align-items: center;
@@ -931,9 +981,25 @@ tbody tr:hover {
 
   .topbar-actions,
   .toolbar-actions,
-  .status-strip {
+  .status-strip,
+  .legal-disclaimer {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .legal-disclaimer {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    padding: 12px;
+  }
+
+  .legal-disclaimer__badge {
+    justify-content: flex-start;
+  }
+
+  .legal-disclaimer p,
+  .legal-disclaimer strong {
+    font-size: 14px;
   }
 
   .topbar-actions > *,
@@ -958,6 +1024,7 @@ tbody tr:hover {
   .feature-card,
   .chart-card,
   .history-card,
+  .legal-disclaimer,
   .donation-panel,
   .prediction-panel,
   .section-toolbar {

@@ -107,6 +107,10 @@ function App() {
           <strong>超级大乐透</strong>
         </div>
         <nav>
+          <a href="#disclaimer">
+            <ShieldCheck size={20} />
+            免责声明
+          </a>
           <a href="#dashboard" className="active">
             <BarChart3 size={20} />
             仪表盘
@@ -186,6 +190,20 @@ function App() {
             </button>
           </div>
         </header>
+
+        <section className="legal-disclaimer" id="disclaimer" role="note" aria-label="法律免责声明">
+          <div className="legal-disclaimer__badge">
+            <ShieldCheck size={22} />
+            <span>法律免责声明</span>
+          </div>
+          <p>
+            <strong>仅供爱好者进行预测分析和统计分析。</strong>
+            <span>不作为博彩投注的参考依据。</span>
+            <span>彩票开奖具有随机性。</span>
+            <span>本程序不承诺或暗示任何中奖概率提升。</span>
+            <span>请理性看待分析结果。</span>
+          </p>
+        </section>
 
         <section className="status-strip" id="dashboard">
           <div className="status-copy">

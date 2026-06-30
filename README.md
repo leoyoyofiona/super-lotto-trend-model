@@ -4,6 +4,8 @@
 
 中国体彩超级大乐透开奖走势分析与预测看板。页面包含实时开奖更新、走势图、冷热遗漏、结构特征、预测号码、开奖历史、奖池和一等奖金额。
 
+免责声明：本项目仅供爱好者进行预测分析和统计分析，不作为博彩投注的参考依据。
+
 线上地址：[https://super-lotto-trend-model.onrender.com](https://super-lotto-trend-model.onrender.com)
 
 ## 宣传图预览
