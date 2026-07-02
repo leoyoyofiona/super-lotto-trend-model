@@ -77,6 +77,25 @@ export interface PredictionTicket {
   }
 }
 
+export interface PredictionHitRecord {
+  issue: string
+  recommended: PredictionTicket
+  frontHits: number
+  backHits: number
+  totalHits: number
+  hitRate: number
+  bestTicket: {
+    name: string
+    frontHits: number
+    backHits: number
+    totalHits: number
+    hitRate: number
+  }
+  averageTotalHits: number
+  averageHitRate: number
+  evaluatedTicketCount: number
+}
+
 export interface ModelResult {
   generatedAt: string
   seed: number

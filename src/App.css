@@ -515,6 +515,10 @@ select {
   line-height: 1.25;
 }
 
+.section-toolbar span {
+  overflow-wrap: anywhere;
+}
+
 .feature-board,
 .history-card,
 .prediction-panel,
@@ -819,6 +823,40 @@ select {
   flex-wrap: wrap;
 }
 
+.hit-summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.hit-summary-item {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+  padding: 11px 12px;
+  border: 1px solid #dbe3ee;
+  border-radius: 8px;
+  background: #f8fafc;
+}
+
+.hit-summary-item span,
+.hit-summary-item em,
+.hit-ticket-cell span,
+.hit-breakdown span,
+.muted-cell {
+  color: #64748b;
+  font-size: 12px;
+  font-style: normal;
+  line-height: 1.35;
+}
+
+.hit-summary-item strong {
+  color: #111827;
+  font-size: 18px;
+  line-height: 1.2;
+}
+
 .table-scroll {
   overflow: auto;
   border: 1px solid #e2e8f0;
@@ -827,7 +865,7 @@ select {
 
 table {
   width: 100%;
-  min-width: 920px;
+  min-width: 1360px;
   border-collapse: collapse;
   background: #ffffff;
 }
@@ -860,6 +898,50 @@ tbody tr:hover {
 .issue-cell {
   color: #1457c8;
   font-weight: 900;
+}
+
+.hit-ticket-cell,
+.hit-breakdown {
+  min-width: 0;
+  display: grid;
+  gap: 5px;
+}
+
+.hit-ticket-cell .ball-group {
+  gap: 5px;
+}
+
+.hit-breakdown strong {
+  color: #0f172a;
+  font-size: 13px;
+  line-height: 1.25;
+}
+
+.hit-rate {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 58px;
+  min-height: 28px;
+  padding: 5px 8px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.hit-rate--high {
+  color: #991b1b;
+  background: #fee2e2;
+}
+
+.hit-rate--medium {
+  color: #b45309;
+  background: #fef3c7;
+}
+
+.hit-rate--low {
+  color: #475569;
+  background: #f1f5f9;
 }
 
 .table-icon {
@@ -952,6 +1034,7 @@ tbody tr:hover {
 
   .metrics-grid,
   .feature-grid,
+  .hit-summary,
   .chart-zone {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -981,6 +1064,7 @@ tbody tr:hover {
 
   .topbar-actions,
   .toolbar-actions,
+  .section-toolbar,
   .status-strip,
   .legal-disclaimer {
     align-items: stretch;
@@ -1013,6 +1097,7 @@ tbody tr:hover {
   .metrics-grid,
   .feature-grid,
   .chart-zone,
+  .hit-summary,
   .latest-feature-grid {
     width: calc(100vw - 24px);
     max-width: calc(100vw - 24px);

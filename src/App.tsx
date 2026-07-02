@@ -30,6 +30,7 @@ import {
   padBall,
   percentile,
 } from './model/features'
+import { buildPredictionHitRows } from './model/backtest'
 import { buildPredictions } from './model/prediction'
 import type { DataStatus, DrawRecord } from './types'
 
@@ -89,6 +90,10 @@ function App() {
   const model = useMemo(
     () => buildPredictions(draws, features, frontStats, backStats, recalcSeed),
     [draws, features, frontStats, backStats, recalcSeed],
+  )
+  const hitRows = useMemo(
+    () => buildPredictionHitRows(draws, tableLimit, recalcSeed),
+    [draws, tableLimit, recalcSeed],
   )
   const latest = draws[0]
   const latestFeature = features[0]
@@ -328,7 +333,12 @@ function App() {
                 </section>
 
                 <div id="history">
-                  <HistoryTable draws={draws} limit={tableLimit} onLimitChange={setTableLimit} />
+                  <HistoryTable
+                    draws={draws}
+                    limit={tableLimit}
+                    hitRows={hitRows}
+                    onLimitChange={setTableLimit}
+                  />
                 </div>
               </div>
 
