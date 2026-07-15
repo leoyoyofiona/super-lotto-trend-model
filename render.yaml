@@ -1,3 +1,10 @@
+databases:
+  - name: super-lotto-visit-db
+    databaseName: super_lotto_visit_db
+    user: super_lotto_visit_user
+    plan: free
+    region: oregon
+
 services:
   - type: web
     name: super-lotto-trend-model
@@ -12,3 +19,7 @@ services:
         value: production
       - key: NODE_VERSION
         value: 22.12.0
+      - key: VISIT_DATABASE_URL
+        fromDatabase:
+          name: super-lotto-visit-db
+          property: connectionString
