@@ -45,6 +45,11 @@ const initialStatus: DataStatus = {
 interface VisitorStats {
   uniqueVisitors: number
   totalVisits: number
+  baselineTotalVisits?: number
+  baselineUniqueVisitors?: number
+  currentPeriodVisits?: number
+  currentPeriodUniqueVisitors?: number
+  baselineStartedAt?: string
   lastVisitAt: string | null
 }
 
@@ -195,7 +200,7 @@ function App() {
               <Users size={18} />
               <div>
                 <strong>来访 {formatCount(visitorStats?.uniqueVisitors)}</strong>
-                <span>访问 {formatCount(visitorStats?.totalVisits)} 次</span>
+                <span>累计访问 {formatCount(visitorStats?.totalVisits)} 次</span>
               </div>
             </div>
             <div className="data-chip" data-stale={status.stale}>
@@ -311,7 +316,7 @@ function App() {
                 icon={Users}
                 label="来访人数"
                 value={`${formatCount(visitorStats?.uniqueVisitors)}人`}
-                detail={`累计访问 ${formatCount(visitorStats?.totalVisits)} 次`}
+                detail={getVisitorStatsDetail(visitorStats)}
                 tone="slate"
               />
               <MetricCard
@@ -420,6 +425,14 @@ function getOrCreateVisitorId() {
 function formatCount(value: number | null | undefined) {
   if (typeof value !== 'number' || !Number.isFinite(value)) return '-'
   return new Intl.NumberFormat('zh-CN').format(value)
+}
+
+function getVisitorStatsDetail(stats: VisitorStats | null) {
+  if (!stats) return '正在读取访问统计'
+  if ((stats.baselineTotalVisits ?? 0) > 0 || (stats.baselineUniqueVisitors ?? 0) > 0) {
+    return `含历史基准，累计访问 ${formatCount(stats.totalVisits)} 次`
+  }
+  return `累计访问 ${formatCount(stats.totalVisits)} 次`
 }
 
 function DonationSection() {

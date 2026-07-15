@@ -11,6 +11,11 @@ const distDir = resolve(rootDir, 'dist')
 const port = Number(process.env.PORT || 3000)
 const lotteryApiBase = 'https://www.fjtc.com.cn/data_api/lottery'
 const visitCounterFile = resolve(process.env.VISIT_COUNTER_FILE || join(rootDir, '.data', 'visit-counter.json'))
+const visitBaseline = {
+  totalVisits: normalizeCount(process.env.VISIT_BASELINE_TOTAL),
+  uniqueVisitors: normalizeCount(process.env.VISIT_BASELINE_UNIQUE),
+  startedAt: process.env.VISIT_BASELINE_STARTED_AT || '2026-06-28T10:11:49Z',
+}
 let visitState = null
 let visitUpdateQueue = Promise.resolve()
 let visitWriteQueue = Promise.resolve()
@@ -197,8 +202,13 @@ function recordVisit(visitorId) {
 
 function toPublicVisitState(state) {
   return {
-    totalVisits: state.totalVisits,
-    uniqueVisitors: state.visitors.size,
+    totalVisits: visitBaseline.totalVisits + state.totalVisits,
+    uniqueVisitors: visitBaseline.uniqueVisitors + state.visitors.size,
+    currentPeriodVisits: state.totalVisits,
+    currentPeriodUniqueVisitors: state.visitors.size,
+    baselineTotalVisits: visitBaseline.totalVisits,
+    baselineUniqueVisitors: visitBaseline.uniqueVisitors,
+    baselineStartedAt: visitBaseline.startedAt,
     lastVisitAt: state.lastVisitAt,
   }
 }

@@ -38,6 +38,14 @@ PORT=4174 npm run start
 
 访问统计接口为 `/api/visits`。默认计数文件保存在 `.data/visit-counter.json`，也可以通过 `VISIT_COUNTER_FILE` 环境变量指定保存位置。Render 免费实例重启或重新部署可能重置本地文件计数；如需长期保留累计值，可给服务绑定持久化磁盘或改接 Redis/数据库。
 
+如果需要把计数器上线前的历史访问量补入页面，可在 Render 环境变量中设置：
+
+- `VISIT_BASELINE_TOTAL`：历史总访问次数
+- `VISIT_BASELINE_UNIQUE`：历史唯一来访人数
+- `VISIT_BASELINE_STARTED_AT`：历史统计起点，默认 `2026-06-28T10:11:49Z`
+
+页面显示值 = 历史基准值 + 新计数器上线后的增量值。
+
 ## Render 部署
 
 项目根目录已经包含 `render.yaml`，可作为 Render Blueprint 或 Web Service 配置使用：
