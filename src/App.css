@@ -214,6 +214,39 @@ main {
   white-space: nowrap;
 }
 
+.visitor-chip {
+  min-height: 46px;
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  padding: 8px 12px;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  color: #991b1b;
+  background: #fff1f2;
+  box-shadow: 0 10px 24px rgba(220, 38, 38, 0.12);
+}
+
+.visitor-chip div {
+  display: grid;
+  gap: 1px;
+}
+
+.visitor-chip strong {
+  color: #991b1b;
+  font-size: 14px;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.visitor-chip span {
+  color: #b91c1c;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
 .data-chip[data-stale="true"] {
   border-color: #fed7aa;
   color: #c2410c;
@@ -425,7 +458,7 @@ select {
 
 .metrics-grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
   gap: 12px;
   margin: 12px 0;
 }
@@ -1089,6 +1122,7 @@ tbody tr:hover {
   .topbar-actions > *,
   .toolbar-actions > *,
   .window-control,
+  .visitor-chip,
   .primary-button,
   .ghost-button {
     width: 100%;

@@ -14,6 +14,7 @@ import {
   Sigma,
   Sparkles,
   Trophy,
+  Users,
   WalletCards,
 } from 'lucide-react'
 import './App.css'
@@ -41,9 +42,18 @@ const initialStatus: DataStatus = {
   updatedAt: '-',
 }
 
+interface VisitorStats {
+  uniqueVisitors: number
+  totalVisits: number
+  lastVisitAt: string | null
+}
+
+const visitorIdStorageKey = 'super-lotto-anonymous-visitor-id'
+
 function App() {
   const [draws, setDraws] = useState<DrawRecord[]>([])
   const [status, setStatus] = useState<DataStatus>(initialStatus)
+  const [visitorStats, setVisitorStats] = useState<VisitorStats | null>(null)
   const [loading, setLoading] = useState(true)
   const [recalcSeed, setRecalcSeed] = useState(20260627)
   const [chartWindow, setChartWindow] = useState(50)
@@ -53,6 +63,10 @@ function App() {
 
   useEffect(() => {
     refreshData()
+  }, [])
+
+  useEffect(() => {
+    void registerVisit()
   }, [])
 
   async function refreshData() {
@@ -82,6 +96,22 @@ function App() {
     })
     setTableLimit(Math.min(30, sorted.length))
     setNotice('导入完成，模型和所有走势图已按新数据重新计算。')
+  }
+
+  async function registerVisit() {
+    try {
+      const visitorId = getOrCreateVisitorId()
+      const response = await fetch('/api/visits', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ visitorId }),
+      })
+      if (!response.ok) throw new Error('visit counter failed')
+      const payload = (await response.json()) as VisitorStats
+      setVisitorStats(payload)
+    } catch {
+      setVisitorStats(null)
+    }
   }
 
   const features = useMemo(() => buildFeatures(draws), [draws])
@@ -161,6 +191,13 @@ function App() {
             </div>
           </div>
           <div className="topbar-actions">
+            <div className="visitor-chip" title="匿名来访统计">
+              <Users size={18} />
+              <div>
+                <strong>来访 {formatCount(visitorStats?.uniqueVisitors)}</strong>
+                <span>访问 {formatCount(visitorStats?.totalVisits)} 次</span>
+              </div>
+            </div>
             <div className="data-chip" data-stale={status.stale}>
               <DatabaseZap size={17} />
               <span>{status.label}</span>
@@ -271,6 +308,13 @@ function App() {
                 tone="blue"
               />
               <MetricCard
+                icon={Users}
+                label="来访人数"
+                value={`${formatCount(visitorStats?.uniqueVisitors)}人`}
+                detail={`累计访问 ${formatCount(visitorStats?.totalVisits)} 次`}
+                tone="slate"
+              />
+              <MetricCard
                 icon={Gauge}
                 label="模型置信度"
                 value={`${model.confidence}%`}
@@ -358,6 +402,24 @@ function App() {
       </main>
     </div>
   )
+}
+
+function getOrCreateVisitorId() {
+  const existing = window.localStorage.getItem(visitorIdStorageKey)
+  if (existing) return existing
+
+  const generated =
+    typeof window.crypto?.randomUUID === 'function'
+      ? window.crypto.randomUUID()
+      : `visitor:${Date.now()}:${Math.random().toString(36).slice(2)}`
+
+  window.localStorage.setItem(visitorIdStorageKey, generated)
+  return generated
+}
+
+function formatCount(value: number | null | undefined) {
+  if (typeof value !== 'number' || !Number.isFinite(value)) return '-'
+  return new Intl.NumberFormat('zh-CN').format(value)
 }
 
 function DonationSection() {
