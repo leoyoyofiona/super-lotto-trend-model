@@ -13,6 +13,8 @@ const port = Number(process.env.PORT || 3000)
 const lotteryApiBase = 'https://www.fjtc.com.cn/data_api/lottery'
 const visitCounterFile = resolve(process.env.VISIT_COUNTER_FILE || join(rootDir, '.data', 'visit-counter.json'))
 const visitDatabaseUrl = process.env.VISIT_DATABASE_URL || process.env.DATABASE_URL || ''
+const visitCounterTable = 'super_lotto_visit_counter'
+const visitVisitorsTable = 'super_lotto_visit_visitors'
 const visitBaseline = {
   totalVisits: normalizeCount(process.env.VISIT_BASELINE_TOTAL),
   uniqueVisitors: normalizeCount(process.env.VISIT_BASELINE_UNIQUE),
@@ -247,8 +249,8 @@ async function loadDatabaseVisitState() {
 
   try {
     const [counterResult, visitorsResult] = await Promise.all([
-      client.query("select total_visits, last_visit_at from visit_counter where key = 'global'"),
-      client.query('select count(*)::int as unique_visitors from visit_visitors'),
+      client.query(`select total_visits, last_visit_at from ${visitCounterTable} where key = 'global'`),
+      client.query(`select count(*)::int as unique_visitors from ${visitVisitorsTable}`),
     ])
     const counter = counterResult.rows[0]
 
@@ -271,21 +273,21 @@ async function recordDatabaseVisit(visitorId) {
 
     if (visitorId) {
       await client.query(
-        'insert into visit_visitors (visitor_hash, first_seen_at) values ($1, now()) on conflict (visitor_hash) do nothing',
+        `insert into ${visitVisitorsTable} (visitor_hash, first_seen_at) values ($1, now()) on conflict (visitor_hash) do nothing`,
         [hashVisitorId(visitorId)],
       )
     }
 
     const counterResult = await client.query(`
-      insert into visit_counter (key, total_visits, last_visit_at)
+      insert into ${visitCounterTable} (key, total_visits, last_visit_at)
       values ('global', 1, now())
       on conflict (key)
       do update set
-        total_visits = visit_counter.total_visits + 1,
+        total_visits = ${visitCounterTable}.total_visits + 1,
         last_visit_at = excluded.last_visit_at
       returning total_visits, last_visit_at
     `)
-    const visitorsResult = await client.query('select count(*)::int as unique_visitors from visit_visitors')
+    const visitorsResult = await client.query(`select count(*)::int as unique_visitors from ${visitVisitorsTable}`)
     await client.query('commit')
 
     const counter = counterResult.rows[0]
@@ -307,13 +309,13 @@ async function ensureVisitSchema() {
 
   visitSchemaReady = (async () => {
     await getVisitPool().query(`
-      create table if not exists visit_counter (
+      create table if not exists ${visitCounterTable} (
         key text primary key,
         total_visits integer not null default 0,
         last_visit_at timestamptz
       );
 
-      create table if not exists visit_visitors (
+      create table if not exists ${visitVisitorsTable} (
         visitor_hash text primary key,
         first_seen_at timestamptz not null default now()
       );

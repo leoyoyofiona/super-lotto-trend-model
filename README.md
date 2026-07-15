@@ -36,7 +36,7 @@ PORT=4174 npm run start
 
 生产服务由 `server/index.mjs` 托管 `dist`，并代理 `/fjtc-lottery/lottery` 到福建体彩网开奖接口。部署后页面点击“刷新开奖”会通过同一个代理获取最新开奖数据。
 
-访问统计接口为 `/api/visits`。线上优先使用 `VISIT_DATABASE_URL` 指向的 PostgreSQL 持久化保存；没有数据库时才退回 `.data/visit-counter.json` 本地文件。Render 免费实例的本地文件在重启、休眠唤醒或重新部署后可能丢失，所以线上必须绑定数据库才能保证累计数据不清零。
+访问统计接口为 `/api/visits`。线上优先使用 `VISIT_DATABASE_URL` 指向的 PostgreSQL 持久化保存；没有数据库时才退回 `.data/visit-counter.json` 本地文件。Render 免费实例的本地文件在重启、休眠唤醒或重新部署后可能丢失，所以线上必须绑定数据库才能保证累计数据不清零。统计数据会写入 `super_lotto_visit_counter` 和 `super_lotto_visit_visitors` 两张独立表；如果 Render 账户已有免费数据库，可以复用同一个 Postgres。
 
 如果需要把计数器上线前的历史访问量补入页面，可在 Render 环境变量中设置：
 
