@@ -23,13 +23,14 @@ interface TrendChartsProps {
   backStats: NumberStat[]
   windowSize: number
   numberLabel?: string
+  padDigits?: boolean
 }
 
-export function TrendCharts({ draws, features, frontStats, backStats, windowSize, numberLabel = '前区号码' }: TrendChartsProps) {
+export function TrendCharts({ draws, features, frontStats, backStats, windowSize, numberLabel = '前区号码', padDigits = true }: TrendChartsProps) {
   const trendRows = buildTrendRows(draws, features).slice(-windowSize)
   const hotRows = frontStats
     .map((stat) => ({
-      number: String(stat.number).padStart(2, '0'),
+      number: padDigits ? String(stat.number).padStart(2, '0') : String(stat.number),
       recent30: stat.recent30,
       omission: stat.currentOmission,
       label: stat.label,
@@ -135,7 +136,7 @@ export function TrendCharts({ draws, features, frontStats, backStats, windowSize
         </ResponsiveContainer>
       </div>
 
-      <NumberHeatmap stats={frontStats} title={`${numberLabel}热力图`} columns={numberLabel === '定位数字' ? 5 : 7} />
+      <NumberHeatmap stats={frontStats} title={`${numberLabel}热力图`} columns={numberLabel === '定位数字' ? 5 : 7} padDigits={padDigits} />
       {backStats.length > 0 && <NumberHeatmap stats={backStats} title="后区号码热力图" columns={6} compact />}
     </section>
   )
@@ -155,11 +156,13 @@ function NumberHeatmap({
   title,
   columns,
   compact = false,
+  padDigits = true,
 }: {
   stats: NumberStat[]
   title: string
   columns: number
   compact?: boolean
+  padDigits?: boolean
 }) {
   const maxFreq = Math.max(1, ...stats.map((stat) => stat.recent30))
 
@@ -179,7 +182,7 @@ function NumberHeatmap({
               }}
               title={`号码${stat.number} 近30期${stat.recent30}次 当前遗漏${stat.currentOmission}期`}
             >
-              <strong>{String(stat.number).padStart(2, '0')}</strong>
+              <strong>{padDigits ? String(stat.number).padStart(2, '0') : String(stat.number)}</strong>
               <span>{compact ? stat.recent30 : `漏${stat.currentOmission}`}</span>
             </div>
           )

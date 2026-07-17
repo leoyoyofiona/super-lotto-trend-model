@@ -1,13 +1,15 @@
 import { CircleHelp, Info, SlidersHorizontal, Star } from 'lucide-react'
 import type { ModelResult, PredictionTicket } from '../types'
 import { BallGroup } from './NumberBall'
+import type { LotteryConfig } from '../data/lotteries'
 
 interface PredictionPanelProps {
   model: ModelResult
   onRecalculate: () => void
+  lottery: LotteryConfig
 }
 
-export function PredictionPanel({ model, onRecalculate }: PredictionPanelProps) {
+export function PredictionPanel({ model, onRecalculate, lottery }: PredictionPanelProps) {
   return (
     <aside className="prediction-panel">
       <div className="panel-title">
@@ -30,7 +32,7 @@ export function PredictionPanel({ model, onRecalculate }: PredictionPanelProps) 
 
       <div className="ticket-list">
         {model.tickets.map((ticket) => (
-          <PredictionTicketCard key={ticket.id} ticket={ticket} />
+          <PredictionTicketCard key={ticket.id} ticket={ticket} padDigits={lottery.mode !== 'digits'} />
         ))}
       </div>
 
@@ -48,7 +50,7 @@ export function PredictionPanel({ model, onRecalculate }: PredictionPanelProps) 
   )
 }
 
-function PredictionTicketCard({ ticket }: { ticket: PredictionTicket }) {
+function PredictionTicketCard({ ticket, padDigits }: { ticket: PredictionTicket; padDigits: boolean }) {
   return (
     <article className="ticket-card">
       <div className="ticket-index">{ticket.id}</div>
@@ -57,7 +59,7 @@ function PredictionTicketCard({ ticket }: { ticket: PredictionTicket }) {
           <strong>{ticket.name}</strong>
           <span>置信 {ticket.confidence}%</span>
         </div>
-        <BallGroup front={ticket.front} back={ticket.back} small />
+        <BallGroup front={ticket.front} back={ticket.back} small padDigits={padDigits} />
         <div className="ticket-meta">
           <span>和值 {ticket.featureSummary.frontSum}</span>
           <span>跨度 {ticket.featureSummary.frontSpan}</span>

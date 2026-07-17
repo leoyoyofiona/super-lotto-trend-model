@@ -43,10 +43,10 @@ export function HistoryTable({ draws, limit, hitRows, onLimitChange, lottery }: 
       return [
         draw.issue,
         draw.date,
-        draw.front.map((item) => String(item).padStart(2, '0')).join(' '),
-        draw.back.map((item) => String(item).padStart(2, '0')).join(' '),
-        hit?.recommended.front.map((item) => String(item).padStart(2, '0')).join(' ') ?? '',
-        hit?.recommended.back.map((item) => String(item).padStart(2, '0')).join(' ') ?? '',
+        draw.front.map((item) => formatLotteryNumber(item, lottery)).join(' '),
+        draw.back.map((item) => formatLotteryNumber(item, lottery)).join(' '),
+        hit?.recommended.front.map((item) => formatLotteryNumber(item, lottery)).join(' ') ?? '',
+        hit?.recommended.back.map((item) => formatLotteryNumber(item, lottery)).join(' ') ?? '',
         hit?.frontHits ?? '',
         hit?.backHits ?? '',
         hit?.totalHits ?? '',
@@ -137,13 +137,13 @@ export function HistoryTable({ draws, limit, hitRows, onLimitChange, lottery }: 
                   <td>{draw.date}</td>
                   <td>{draw.week ?? '-'}</td>
                   <td>
-                    <BallGroup front={draw.front} back={draw.back} small />
+                    <BallGroup front={draw.front} back={draw.back} small padDigits={lottery.mode !== 'digits'} />
                   </td>
                   <td>
                     {hit ? (
                       <div className="hit-ticket-cell">
                         <span>{hit.recommended.name}</span>
-                        <BallGroup front={hit.recommended.front} back={hit.recommended.back} small />
+                        <BallGroup front={hit.recommended.front} back={hit.recommended.back} small padDigits={lottery.mode !== 'digits'} />
                       </div>
                     ) : (
                       <span className="muted-cell">样本不足</span>
@@ -232,4 +232,8 @@ function getHitRateTone(hitRate: number) {
   if (hitRate >= 42.9) return 'hit-rate--high'
   if (hitRate >= 28.6) return 'hit-rate--medium'
   return 'hit-rate--low'
+}
+
+function formatLotteryNumber(value: number, lottery: LotteryConfig) {
+  return lottery.mode === 'digits' ? String(value) : String(value).padStart(2, '0')
 }

@@ -29,7 +29,6 @@ import {
   buildFeatures,
   buildNumberStats,
   formatMoney,
-  padBall,
   percentile,
 } from './model/features'
 import { buildPredictionHitRows } from './model/backtest'
@@ -296,7 +295,7 @@ function App() {
                 <strong>{latest.issue}期</strong>
                 <p>{latest.date}（周{latest.week ?? '-'}）</p>
               </div>
-              <BallGroup front={latest.front} back={latest.back} />
+              <BallGroup front={latest.front} back={latest.back} padDigits={lottery.mode !== 'digits'} />
               <div className="latest-block">
                 <span>下期参考</span>
                 <strong>和值 {sumBand.low}-{sumBand.high}</strong>
@@ -377,8 +376,8 @@ function App() {
                       ['斜连邻号', String(latestFeature.neighborCount)],
                     ]} />
                     <FeatureCard title="冷热遗漏" items={[
-                      ['热码', hotFront.map((item) => padBall(item.number)).join(' ')],
-                      ['冷码', coldFront.map((item) => padBall(item.number)).join(' ')],
+                      ['热码', hotFront.map((item) => formatLotteryNumber(item.number, lottery.mode !== 'digits')).join(' ')],
+                      ['冷码', coldFront.map((item) => formatLotteryNumber(item.number, lottery.mode !== 'digits')).join(' ')],
                       ['最高遗漏', `${Math.max(...frontStats.map((item) => item.currentOmission))}期`],
                       ['和值主区间', `${sumBand.low}-${sumBand.high}`],
                     ]} />
@@ -399,6 +398,7 @@ function App() {
                     backStats={backStats}
                     windowSize={chartWindow}
                     numberLabel={lottery.mode === 'digits' ? '定位数字' : '前区号码'}
+                    padDigits={lottery.mode !== 'digits'}
                   />
                 </section>
 
@@ -414,7 +414,7 @@ function App() {
               </div>
 
             <div id="prediction">
-              <PredictionPanel model={model} onRecalculate={() => setRecalcSeed((value) => value + 7919)} />
+              <PredictionPanel lottery={lottery} model={model} onRecalculate={() => setRecalcSeed((value) => value + 7919)} />
             </div>
             </div>
 
@@ -436,6 +436,10 @@ function sanitizeDrawForLottery(draw: DrawRecord, config: LotteryConfig): DrawRe
   if (config.id === 'pl3') return { ...draw, front: draw.front.slice(0, 3), back: [] }
   if (config.id === 'pl5') return { ...draw, front: draw.front.slice(0, 5), back: [] }
   return draw
+}
+
+function formatLotteryNumber(value: number, padDigits: boolean) {
+  return padDigits ? String(value).padStart(2, '0') : String(value)
 }
 
 function getOrCreateVisitorId() {
