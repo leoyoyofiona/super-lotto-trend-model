@@ -24,7 +24,7 @@ import { BallGroup } from './components/NumberBall'
 import { PredictionPanel } from './components/PredictionPanel'
 import { TrendCharts } from './components/TrendCharts'
 import { loadDraws, parseImportedText } from './data/providers'
-import { DEFAULT_LOTTERY, LOTTERIES, type LotteryId } from './data/lotteries'
+import { DEFAULT_LOTTERY, LOTTERIES, type LotteryConfig, type LotteryId } from './data/lotteries'
 import {
   buildFeatures,
   buildNumberStats,
@@ -84,9 +84,10 @@ function App() {
     setNotice('')
     const result = await loadDraws(config)
     if (requestId !== refreshRequestRef.current) return
-    setDraws(result.draws)
+    const cleanedDraws = result.draws.map((draw) => sanitizeDrawForLottery(draw, config))
+    setDraws(cleanedDraws)
     setStatus(result.status)
-    setTableLimit(Math.min(30, result.draws.length))
+    setTableLimit(Math.min(30, cleanedDraws.length))
     setLoading(false)
   }
 
@@ -428,6 +429,13 @@ function App() {
       </main>
     </div>
   )
+}
+
+function sanitizeDrawForLottery(draw: DrawRecord, config: LotteryConfig): DrawRecord {
+  if (config.id === 'qxc') return { ...draw, front: draw.front.slice(-7), back: [] }
+  if (config.id === 'pl3') return { ...draw, front: draw.front.slice(0, 3), back: [] }
+  if (config.id === 'pl5') return { ...draw, front: draw.front.slice(0, 5), back: [] }
+  return draw
 }
 
 function getOrCreateVisitorId() {
