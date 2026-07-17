@@ -22,9 +22,10 @@ interface TrendChartsProps {
   frontStats: NumberStat[]
   backStats: NumberStat[]
   windowSize: number
+  numberLabel?: string
 }
 
-export function TrendCharts({ draws, features, frontStats, backStats, windowSize }: TrendChartsProps) {
+export function TrendCharts({ draws, features, frontStats, backStats, windowSize, numberLabel = '前区号码' }: TrendChartsProps) {
   const trendRows = buildTrendRows(draws, features).slice(-windowSize)
   const hotRows = frontStats
     .map((stat) => ({
@@ -117,7 +118,7 @@ export function TrendCharts({ draws, features, frontStats, backStats, windowSize
       </div>
 
       <div className="chart-card chart-card--wide">
-        <ChartHeader title="前区冷热遗漏" caption="近30期频次与当前遗漏并排比较" />
+        <ChartHeader title={`${numberLabel}冷热遗漏`} caption="近30期频次与当前遗漏并排比较" />
         <ResponsiveContainer width="100%" height={252}>
           <BarChart data={hotRows} margin={{ top: 8, right: 10, left: -18, bottom: 0 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#e8edf5" />
@@ -134,8 +135,8 @@ export function TrendCharts({ draws, features, frontStats, backStats, windowSize
         </ResponsiveContainer>
       </div>
 
-      <NumberHeatmap stats={frontStats} title="前区号码热力图" columns={7} />
-      <NumberHeatmap stats={backStats} title="后区号码热力图" columns={6} compact />
+      <NumberHeatmap stats={frontStats} title={`${numberLabel}热力图`} columns={numberLabel === '定位数字' ? 5 : 7} />
+      {backStats.length > 0 && <NumberHeatmap stats={backStats} title="后区号码热力图" columns={6} compact />}
     </section>
   )
 }

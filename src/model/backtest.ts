@@ -1,14 +1,15 @@
 import type { DrawRecord, PredictionHitRecord, PredictionTicket } from '../types'
 import { buildFeatures, buildNumberStats } from './features'
 import { buildPredictions } from './prediction'
+import type { LotteryConfig } from '../data/lotteries'
 
 const MIN_HISTORY_DRAWS = 10
-const TOTAL_BALLS = 7
 
 export function buildPredictionHitRows(
   draws: DrawRecord[],
   visibleLimit: number,
   baseSeed: number,
+  config?: LotteryConfig,
 ): PredictionHitRecord[] {
   const visibleDraws = draws.slice(0, visibleLimit)
 
@@ -17,7 +18,7 @@ export function buildPredictionHitRows(
     if (priorDraws.length < MIN_HISTORY_DRAWS) return []
 
     const features = buildFeatures(priorDraws)
-    const frontStats = buildNumberStats(priorDraws, 'front')
+    const frontStats = buildNumberStats(priorDraws, 'front', config?.mode === 'digits' ? 9 : undefined, config?.mode === 'digits' ? 0 : 1)
     const backStats = buildNumberStats(priorDraws, 'back')
     const model = buildPredictions(
       priorDraws,
@@ -25,9 +26,10 @@ export function buildPredictionHitRows(
       frontStats,
       backStats,
       getBacktestSeed(baseSeed, draw.issue, index),
+      config,
     )
 
-    const ticketHits = model.tickets.map((ticket) => compareTicket(ticket, draw))
+    const ticketHits = model.tickets.map((ticket) => compareTicket(ticket, draw, config))
     const primary = ticketHits[0]
     const best = [...ticketHits].sort((a, b) => b.totalHits - a.totalHits || b.backHits - a.backHits)[0]
     const averageTotalHits =
@@ -48,13 +50,13 @@ export function buildPredictionHitRows(
         hitRate: best.hitRate,
       },
       averageTotalHits: Number(averageTotalHits.toFixed(2)),
-      averageHitRate: Number(((averageTotalHits / TOTAL_BALLS) * 100).toFixed(1)),
+      averageHitRate: Number(((averageTotalHits / getTotalBalls(draw, config)) * 100).toFixed(1)),
       evaluatedTicketCount: ticketHits.length,
     }]
   })
 }
 
-function compareTicket(ticket: PredictionTicket, draw: DrawRecord) {
+function compareTicket(ticket: PredictionTicket, draw: DrawRecord, config?: LotteryConfig) {
   const frontHits = countHits(ticket.front, draw.front)
   const backHits = countHits(ticket.back, draw.back)
   const totalHits = frontHits + backHits
@@ -64,8 +66,12 @@ function compareTicket(ticket: PredictionTicket, draw: DrawRecord) {
     frontHits,
     backHits,
     totalHits,
-    hitRate: Number(((totalHits / TOTAL_BALLS) * 100).toFixed(1)),
+    hitRate: Number(((totalHits / getTotalBalls(draw, config)) * 100).toFixed(1)),
   }
+}
+
+function getTotalBalls(draw: DrawRecord, config?: LotteryConfig) {
+  return config?.mode === 'digits' ? draw.front.length : draw.front.length + draw.back.length
 }
 
 function countHits(predicted: number[], actual: number[]) {

@@ -2,7 +2,7 @@
 
 [![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/leoyoyofiona/super-lotto-trend-model)
 
-中国体彩超级大乐透开奖走势分析与预测看板。页面包含实时开奖更新、走势图、冷热遗漏、结构特征、预测号码、开奖历史、奖池和一等奖金额。
+中国体育彩票数字型彩种开奖走势分析与预测看板。支持超级大乐透、排列3、排列5和7星彩，页面包含彩种切换、开奖数据更新、走势图、冷热遗漏、结构特征、预测号码、开奖历史与命中率回测。
 
 免责声明：本项目仅供爱好者进行预测分析和统计分析，不作为博彩投注的参考依据。
 

@@ -1,4 +1,5 @@
 export type BallArea = 'front' | 'back'
+export type LotteryMode = 'lotto' | 'digits'
 
 export interface DrawRecord {
   issue: string

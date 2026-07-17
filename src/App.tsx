@@ -24,6 +24,7 @@ import { BallGroup } from './components/NumberBall'
 import { PredictionPanel } from './components/PredictionPanel'
 import { TrendCharts } from './components/TrendCharts'
 import { loadDraws, parseImportedText } from './data/providers'
+import { DEFAULT_LOTTERY, LOTTERIES, type LotteryId } from './data/lotteries'
 import {
   buildFeatures,
   buildNumberStats,
@@ -57,6 +58,7 @@ const visitorIdStorageKey = 'super-lotto-anonymous-visitor-id'
 
 function App() {
   const [draws, setDraws] = useState<DrawRecord[]>([])
+  const [lotteryId, setLotteryId] = useState<LotteryId>(DEFAULT_LOTTERY.id)
   const [status, setStatus] = useState<DataStatus>(initialStatus)
   const [visitorStats, setVisitorStats] = useState<VisitorStats | null>(null)
   const [loading, setLoading] = useState(true)
@@ -65,19 +67,23 @@ function App() {
   const [tableLimit, setTableLimit] = useState(30)
   const [notice, setNotice] = useState('')
   const fileInputRef = useRef<HTMLInputElement | null>(null)
+  const refreshRequestRef = useRef(0)
+  const lottery = LOTTERIES.find((item) => item.id === lotteryId) ?? DEFAULT_LOTTERY
 
   useEffect(() => {
-    refreshData()
-  }, [])
+    void refreshData(lottery)
+  }, [lotteryId, lottery])
 
   useEffect(() => {
     void registerVisit()
   }, [])
 
-  async function refreshData() {
+  async function refreshData(config = lottery) {
+    const requestId = ++refreshRequestRef.current
     setLoading(true)
     setNotice('')
-    const result = await loadDraws()
+    const result = await loadDraws(config)
+    if (requestId !== refreshRequestRef.current) return
     setDraws(result.draws)
     setStatus(result.status)
     setTableLimit(Math.min(30, result.draws.length))
@@ -86,7 +92,7 @@ function App() {
 
   async function importFile(file: File) {
     const raw = await file.text()
-    const imported = parseImportedText(raw)
+    const imported = parseImportedText(raw, lottery)
     if (!imported.length) {
       setNotice('导入失败：没有识别到有效期号、前区和后区号码。')
       return
@@ -120,15 +126,15 @@ function App() {
   }
 
   const features = useMemo(() => buildFeatures(draws), [draws])
-  const frontStats = useMemo(() => buildNumberStats(draws, 'front'), [draws])
-  const backStats = useMemo(() => buildNumberStats(draws, 'back'), [draws])
+  const frontStats = useMemo(() => buildNumberStats(draws, 'front', lottery.max, lottery.mode === 'digits' ? 0 : 1), [draws, lottery])
+  const backStats = useMemo(() => lottery.mode === 'lotto' ? buildNumberStats(draws, 'back') : [], [draws, lottery])
   const model = useMemo(
-    () => buildPredictions(draws, features, frontStats, backStats, recalcSeed),
-    [draws, features, frontStats, backStats, recalcSeed],
+    () => buildPredictions(draws, features, frontStats, backStats, recalcSeed, lottery),
+    [draws, features, frontStats, backStats, recalcSeed, lottery],
   )
   const hitRows = useMemo(
-    () => buildPredictionHitRows(draws, tableLimit, recalcSeed),
-    [draws, tableLimit, recalcSeed],
+    () => buildPredictionHitRows(draws, tableLimit, recalcSeed, lottery),
+    [draws, tableLimit, recalcSeed, lottery],
   )
   const latest = draws[0]
   const latestFeature = features[0]
@@ -144,7 +150,7 @@ function App() {
       <aside className="side-rail" aria-label="主导航">
         <div className="brand-mark">
           <span className="leo-logo" aria-label="LEO logo">LEO</span>
-          <strong>超级大乐透</strong>
+            <strong>体彩分析</strong>
         </div>
         <nav>
           <a href="#disclaimer">
@@ -191,8 +197,8 @@ function App() {
           <div className="title-lockup">
             <span className="leo-logo leo-logo--topbar" aria-label="LEO logo">LEO</span>
             <div className="title-copy">
-              <h1>超级大乐透走势预测</h1>
-              <p>前区35选5 + 后区12选2，多变量特征工程与可视化复盘</p>
+              <h1>{lottery.name}走势预测</h1>
+              <p>{lottery.subtitle}</p>
             </div>
           </div>
           <div className="topbar-actions">
@@ -222,7 +228,10 @@ function App() {
                 event.currentTarget.value = ''
               }}
             />
-            <button type="button" className="ghost-button" onClick={refreshData} disabled={loading}>
+            <select className="lottery-select" value={lotteryId} onChange={(event) => setLotteryId(event.target.value as LotteryId)} aria-label="选择彩种">
+              {LOTTERIES.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
+            </select>
+            <button type="button" className="ghost-button" onClick={() => void refreshData()} disabled={loading}>
               <RefreshCcw size={17} className={loading ? 'spin' : undefined} />
               刷新开奖
             </button>
@@ -284,7 +293,7 @@ function App() {
               </div>
               <div className="latest-feature-grid">
                 <FeaturePill label="奇偶比" value={`${latestFeature.frontOdd}:${latestFeature.frontEven}`} />
-                <FeaturePill label="大小比" value={`${latestFeature.frontSmall}:${latestFeature.frontBig}`} />
+                <FeaturePill label={lottery.mode === 'digits' ? '重复位' : '大小比'} value={lottery.mode === 'digits' ? String(latest.front.length - new Set(latest.front).size) : `${latestFeature.frontSmall}:${latestFeature.frontBig}`} />
                 <FeaturePill label="012路" value={`${latestFeature.frontRoute0}:${latestFeature.frontRoute1}:${latestFeature.frontRoute2}`} />
                 <FeaturePill label="AC值" value={String(latestFeature.frontAc)} />
               </div>
@@ -295,14 +304,14 @@ function App() {
                 icon={WalletCards}
                 label="奖池累计"
                 value={`${formatMoney(latest.pool, true)}元`}
-                detail="最新一期公布金额"
+                detail={lottery.mode === 'digits' ? '当前彩种暂无奖池字段' : '最新一期公布金额'}
                 tone="red"
               />
               <MetricCard
                 icon={Trophy}
                 label="一等奖奖金"
                 value={`${formatMoney(latest.firstPrize, true)}元`}
-                detail="基本投注单注奖金"
+                detail={lottery.mode === 'digits' ? '当前彩种暂无奖金字段' : '基本投注单注奖金'}
                 tone="amber"
               />
               <MetricCard
@@ -378,6 +387,7 @@ function App() {
                     frontStats={frontStats}
                     backStats={backStats}
                     windowSize={chartWindow}
+                    numberLabel={lottery.mode === 'digits' ? '定位数字' : '前区号码'}
                   />
                 </section>
 
@@ -387,6 +397,7 @@ function App() {
                     limit={tableLimit}
                     hitRows={hitRows}
                     onLimitChange={setTableLimit}
+                    lottery={lottery}
                   />
                 </div>
               </div>

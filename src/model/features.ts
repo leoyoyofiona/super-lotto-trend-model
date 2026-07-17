@@ -120,7 +120,7 @@ export function buildFeatures(draws: DrawRecord[]): DrawFeatures[] {
       frontSum: sum(draw.front),
       backSum: sum(draw.back),
       frontSpan: Math.max(...draw.front) - Math.min(...draw.front),
-      backSpan: Math.max(...draw.back) - Math.min(...draw.back),
+      backSpan: range(draw.back),
       frontAc: getAcValue(draw.front),
       backAc: getAcValue(draw.back),
       frontOdd: draw.front.filter((number) => number % 2 === 1).length,
@@ -149,14 +149,14 @@ export function buildFeatures(draws: DrawRecord[]): DrawFeatures[] {
   return draws.map((draw) => featureByIssue.get(draw.issue)).filter(Boolean) as DrawFeatures[]
 }
 
-export function buildNumberStats(draws: DrawRecord[], area: BallArea): NumberStat[] {
-  const max = area === 'front' ? FRONT_MAX : BACK_MAX
-  const picksPerDraw = area === 'front' ? 5 : 2
+export function buildNumberStats(draws: DrawRecord[], area: BallArea, maxOverride?: number, startOverride = 1): NumberStat[] {
+  const max = maxOverride ?? (area === 'front' ? FRONT_MAX : BACK_MAX)
+  const picksPerDraw = maxOverride ? (draws[0]?.front.length ?? 1) : area === 'front' ? 5 : 2
   const source = draws.map((draw) => (area === 'front' ? draw.front : draw.back))
   const chronological = [...source].reverse()
 
-  return Array.from({ length: max }, (_, index) => {
-    const number = index + 1
+  return Array.from({ length: max - startOverride + 1 }, (_, index) => {
+    const number = index + startOverride
     const hits = chronological.map((numbers) => numbers.includes(number))
     const total = hits.filter(Boolean).length
     const currentOmission = getCurrentOmission(hits)
@@ -222,6 +222,11 @@ export function percentile(values: number[], percentileValue: number) {
 
 export function sum(numbers: number[]) {
   return numbers.reduce((acc, number) => acc + number, 0)
+}
+
+function range(numbers: number[]) {
+  if (!numbers.length) return 0
+  return Math.max(...numbers) - Math.min(...numbers)
 }
 
 export function average(values: number[]) {

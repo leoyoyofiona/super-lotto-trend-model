@@ -21,9 +21,9 @@ export function BallGroup({ front, back, small = false }: { front: number[]; bac
       {front.map((number) => (
         <NumberBall key={`f-${number}`} value={number} tone="front" small={small} />
       ))}
-      <span className="ball-divider" />
-      {back.map((number) => (
-        <NumberBall key={`b-${number}`} value={number} tone="back" small={small} />
+      {back.length > 0 && <span className="ball-divider" />}
+      {back.map((number, index) => (
+        <NumberBall key={`b-${number}-${index}`} value={number} tone="back" small={small} />
       ))}
     </div>
   )

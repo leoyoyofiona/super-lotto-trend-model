@@ -2,15 +2,17 @@ import { Download, Search } from 'lucide-react'
 import type { DrawRecord, PredictionHitRecord } from '../types'
 import { formatMoney } from '../model/features'
 import { BallGroup } from './NumberBall'
+import type { LotteryConfig } from '../data/lotteries'
 
 interface HistoryTableProps {
   draws: DrawRecord[]
   limit: number
   hitRows: PredictionHitRecord[]
   onLimitChange: (limit: number) => void
+  lottery: LotteryConfig
 }
 
-export function HistoryTable({ draws, limit, hitRows, onLimitChange }: HistoryTableProps) {
+export function HistoryTable({ draws, limit, hitRows, onLimitChange, lottery }: HistoryTableProps) {
   const visible = draws.slice(0, limit)
   const hitRowsByIssue = new Map(hitRows.map((row) => [row.issue, row]))
   const visibleHitRows = visible
@@ -60,7 +62,7 @@ export function HistoryTable({ draws, limit, hitRows, onLimitChange }: HistoryTa
     const url = URL.createObjectURL(blob)
     const link = document.createElement('a')
     link.href = url
-    link.download = 'dlt-draw-history.csv'
+    link.download = `${lottery.id}-draw-history.csv`
     link.click()
     URL.revokeObjectURL(url)
   }
@@ -70,7 +72,7 @@ export function HistoryTable({ draws, limit, hitRows, onLimitChange }: HistoryTa
       <div className="section-toolbar">
         <div>
           <h2>开奖历史</h2>
-          <span>每一期中奖号码、推荐号码命中球数、命中率、一等奖奖金、销售额和奖池累计金额</span>
+          <span>每一期开奖号码、推荐号码命中球数、命中率和历史数据</span>
         </div>
         <div className="toolbar-actions">
           <label>
@@ -150,8 +152,8 @@ export function HistoryTable({ draws, limit, hitRows, onLimitChange }: HistoryTa
                   <td>
                     {hit ? (
                       <div className="hit-breakdown">
-                        <strong>{hit.totalHits}/7球</strong>
-                        <span>前区 {hit.frontHits}/5 · 后区 {hit.backHits}/2</span>
+                        <strong>{hit.totalHits}/{draw.front.length + draw.back.length}球</strong>
+                        <span>{lottery.mode === 'digits' ? `命中 ${hit.frontHits}/${draw.front.length}` : `前区 ${hit.frontHits}/5 · 后区 ${hit.backHits}/2`}</span>
                       </div>
                     ) : (
                       <span className="muted-cell">-</span>
@@ -167,9 +169,9 @@ export function HistoryTable({ draws, limit, hitRows, onLimitChange }: HistoryTa
                   <td>
                     {hit ? (
                       <div className="hit-breakdown">
-                        <strong>最佳 {hit.bestTicket.totalHits}/7球</strong>
+                        <strong>最佳 {hit.bestTicket.totalHits}/{draw.front.length + draw.back.length}球</strong>
                         <span>
-                          {hit.bestTicket.name} · 平均 {hit.averageTotalHits.toFixed(1)}/7球 · {hit.averageHitRate}%
+                          {hit.bestTicket.name} · 平均 {hit.averageTotalHits.toFixed(1)}/{draw.front.length + draw.back.length}球 · {hit.averageHitRate}%
                         </span>
                       </div>
                     ) : (

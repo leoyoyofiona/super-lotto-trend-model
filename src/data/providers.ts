@@ -1,23 +1,24 @@
 import type { DataStatus, DrawRecord } from '../types'
 import { demoDraws } from './demoData'
 import { normalizeNumbers, parseMoney } from '../model/features'
+import type { LotteryConfig } from './lotteries'
 
 const FJTC_SOURCES = ['/fjtc-lottery/lottery', 'https://www.fjtc.com.cn/data_api/lottery']
 const STATIC_SOURCES = ['/zhcw-chart/kj_dlt.json', 'https://www.zhcw.com/chartstatic/json/kj_dlt.json']
 
-export async function loadDraws(): Promise<{ draws: DrawRecord[]; status: DataStatus }> {
+export async function loadDraws(config: LotteryConfig): Promise<{ draws: DrawRecord[]; status: DataStatus }> {
   const errors: string[] = []
   let staleBackup: { draws: DrawRecord[]; status: DataStatus } | null = null
 
   for (const source of FJTC_SOURCES) {
     try {
       const params = new URLSearchParams({
-        type: 'dlt',
+        type: config.apiType,
         page: '1',
         limit: '100',
         so_start: '0',
         so_end: '0',
-        gameNo: '85',
+        gameNo: config.id === 'dlt' ? '85' : '',
         provinceId: '0',
         pageSize: '100',
         isVerify: '1',
@@ -27,7 +28,7 @@ export async function loadDraws(): Promise<{ draws: DrawRecord[]; status: DataSt
       const response = await fetch(`${source}?${params.toString()}`, { cache: 'no-store' })
       if (!response.ok) throw new Error(`${source} ${response.status}`)
       const payload = await response.json()
-      const draws = parseFjtcLive(payload)
+      const draws = parseFjtcLive(payload, config)
       if (draws.length >= 10) {
         const stale = isStale(draws[0]?.date, 7)
         return {
@@ -39,18 +40,18 @@ export async function loadDraws(): Promise<{ draws: DrawRecord[]; status: DataSt
           ),
         }
       }
-      throw new Error('福建体彩网接口无有效大乐透数据')
+      throw new Error(`福建体彩网接口无有效${config.name}数据`)
     } catch (error) {
       errors.push(error instanceof Error ? error.message : '福建体彩网实时接口失败')
     }
   }
 
-  for (const source of STATIC_SOURCES) {
+  for (const source of config.mode === 'lotto' ? STATIC_SOURCES : []) {
     try {
       const response = await fetch(`${source}?t=${Date.now()}`, { cache: 'no-store' })
       if (!response.ok) throw new Error(`${source} ${response.status}`)
       const payload = await response.json()
-      const draws = parseZhcwStatic(payload)
+      const draws = parseZhcwStatic(payload, config)
       if (draws.length >= 10) {
         const stale = isStale(draws[0]?.date)
         const backup = {
@@ -90,34 +91,34 @@ export async function loadDraws(): Promise<{ draws: DrawRecord[]; status: DataSt
   }
 
   return {
-    draws: demoDraws,
+    draws: config.mode === 'lotto' ? demoDraws : buildDigitDemoDraws(config),
     status: {
       label: '内置演示数据',
-      detail: `公开数据源暂不可用：${errors.slice(0, 2).join('；') || '网络失败'}。当前用于演示模型和图表，请导入最新数据后再投注参考。`,
+      detail: `公开数据源暂不可用：${errors.slice(0, 2).join('；') || '网络失败'}。当前为${config.name}演示数据，请更新或导入数据后再分析。`,
       stale: true,
       updatedAt: new Date().toLocaleString('zh-CN', { hour12: false }),
     },
   }
 }
 
-export function parseImportedText(raw: string): DrawRecord[] {
+export function parseImportedText(raw: string, config: LotteryConfig): DrawRecord[] {
   const text = raw.trim()
   if (!text) return []
 
   if (text.startsWith('{') || text.startsWith('[')) {
     const payload = JSON.parse(text)
-    const maybeFjtc = parseFjtcLive(payload)
+    const maybeFjtc = parseFjtcLive(payload, config)
     if (maybeFjtc.length) return maybeFjtc
-    const maybeZhcw = parseZhcwStatic(payload)
+    const maybeZhcw = parseZhcwStatic(payload, config)
     if (maybeZhcw.length) return maybeZhcw
     const rows = Array.isArray(payload) ? payload : payload.draws
-    if (Array.isArray(rows)) return rows.map(normalizeRecord).filter(Boolean) as DrawRecord[]
+    if (Array.isArray(rows)) return rows.map((row) => normalizeRecord(row, config)).filter(Boolean) as DrawRecord[]
   }
 
-  return parseCsv(text)
+  return parseCsv(text, config)
 }
 
-function parseCsv(text: string): DrawRecord[] {
+function parseCsv(text: string, config: LotteryConfig): DrawRecord[] {
   const lines = text.split(/\r?\n/).filter(Boolean)
   const headers = lines[0].split(',').map((item) => item.trim().toLowerCase())
   const rows = lines.slice(1)
@@ -137,7 +138,7 @@ function parseCsv(text: string): DrawRecord[] {
         sales: get('sales', '销售额', 'qgxsje'),
         firstPrize: get('firstprize', '一等奖奖金', 'j1j'),
         pool: get('pool', '奖池', 'jcje'),
-      })
+      }, config)
     })
     .filter(Boolean) as DrawRecord[]
 }
@@ -157,13 +158,19 @@ function splitCsvLine(line: string) {
   return cells
 }
 
-function normalizeRecord(record: Record<string, unknown>): DrawRecord | null {
+function normalizeRecord(record: Record<string, unknown>, config: LotteryConfig): DrawRecord | null {
   const issue = String(record.issue ?? record.qh ?? '').trim()
   const date = normalizeDate(record.date ?? record.kjsj ?? record.openTime)
-  const front = normalizeNumbers(record.front ?? record.kjjgqq ?? record.frontWinningNum, 5, 35)
-  const back = normalizeNumbers(record.back ?? record.kjjghq ?? record.backWinningNum, 2, 12)
+  const rawFront = config.mode === 'digits'
+    ? normalizeDigitNumbers(record.front ?? record.kjjgqq ?? record.frontWinningNum, config.count)
+    : normalizeNumbers(record.front ?? record.kjjgqq ?? record.frontWinningNum, config.count, config.max)
+  const front = config.mode === 'digits' ? rawFront : rawFront.sort((a, b) => a - b)
+  const rawBack = config.mode === 'lotto'
+    ? normalizeNumbers(record.back ?? record.kjjghq ?? record.backWinningNum, 2, 12)
+    : []
+  const back = config.mode === 'digits' ? [] : rawBack.sort((a, b) => a - b)
 
-  if (!issue || !date || front.length !== 5 || back.length !== 2) return null
+  if (!issue || !date || front.length !== config.count || (config.mode === 'lotto' && back.length !== 2)) return null
 
   return {
     issue,
@@ -179,7 +186,7 @@ function normalizeRecord(record: Record<string, unknown>): DrawRecord | null {
   }
 }
 
-function parseFjtcLive(payload: unknown): DrawRecord[] {
+function parseFjtcLive(payload: unknown, config: LotteryConfig): DrawRecord[] {
   const rows =
     typeof payload === 'object' && payload && 'data' in payload
       ? (payload as { data?: unknown[] }).data
@@ -190,16 +197,14 @@ function parseFjtcLive(payload: unknown): DrawRecord[] {
     .map((row) => {
       if (!row || typeof row !== 'object') return null
       const item = row as Record<string, unknown>
-      const allNumbers = normalizeNumbers(item.lotteryDrawResult, 7, 35)
-      const rawNumbers =
-        typeof item.lotteryDrawResult === 'string'
-          ? item.lotteryDrawResult
-              .split(/\s+/)
-              .map((value) => Number(value))
-              .filter((value) => Number.isInteger(value))
-          : allNumbers
-      const front = rawNumbers.slice(0, 5).sort((a, b) => a - b)
-      const back = rawNumbers.slice(5, 7).sort((a, b) => a - b)
+      const rawNumbers = typeof item.lotteryDrawResult === 'string'
+        ? item.lotteryDrawResult.split(/\s+/).map((value) => Number(value)).filter((value) => Number.isInteger(value))
+        : normalizeNumbers(item.lotteryDrawResult, config.count + (config.mode === 'lotto' ? 2 : 0), config.mode === 'lotto' ? 35 : 9)
+      if (config.mode === 'digits' && rawNumbers.length !== config.count) return null
+      const front = config.mode === 'digits'
+        ? rawNumbers.slice(0, config.count)
+        : rawNumbers.slice(0, 5).sort((a, b) => a - b)
+      const back = config.mode === 'lotto' ? rawNumbers.slice(5, 7).sort((a, b) => a - b) : []
       const firstPrize = Array.isArray(item.prizeLevelList)
         ? (item.prizeLevelList as Array<Record<string, unknown>>).find(
             (level) => level.prizeLevel === '一等奖' && String(level.awardType ?? '0') === '0',
@@ -216,13 +221,13 @@ function parseFjtcLive(payload: unknown): DrawRecord[] {
         firstPrizeCount: firstPrize?.stakeCount,
         pool: item.poolBalanceAfterdraw ?? item.poolBalance,
         source: '福建体彩网实时开奖接口',
-      })
+      }, config)
     })
     .filter((item): item is DrawRecord => Boolean(item))
     .sort(compareIssueDesc)
 }
 
-function parseZhcwStatic(payload: unknown): DrawRecord[] {
+function parseZhcwStatic(payload: unknown, config: LotteryConfig): DrawRecord[] {
   const rows =
     typeof payload === 'object' && payload && 'zjxq' in payload
       ? (payload as { zjxq?: unknown[] }).zjxq
@@ -244,7 +249,7 @@ function parseZhcwStatic(payload: unknown): DrawRecord[] {
         firstPrize: firstAward?.dzjj,
         firstPrizeCount: firstAward?.zjzs,
         pool: item.jcje,
-      })
+      }, config)
     })
     .filter((item): item is DrawRecord => Boolean(item))
     .sort(compareIssueDesc) as DrawRecord[]
@@ -274,7 +279,7 @@ function parseZhcwJsonpPayload(payload: unknown): DrawRecord[] {
         firstPrize: first?.awardMoney,
         firstPrizeCount: first?.awardNum,
         pool: item.prizePoolMoney,
-      })
+      }, { id: 'dlt', name: '超级大乐透', subtitle: '', apiType: 'dlt', count: 5, max: 35, mode: 'lotto' })
     })
     .filter((item): item is DrawRecord => Boolean(item))
     .sort(compareIssueDesc) as DrawRecord[]
@@ -332,6 +337,15 @@ function normalizeDate(value: unknown) {
   return `${match[1]}-${match[2].padStart(2, '0')}-${match[3].padStart(2, '0')}`
 }
 
+function normalizeDigitNumbers(input: unknown, expected: number) {
+  const values = Array.isArray(input)
+    ? input.map((item) => Number(item))
+    : typeof input === 'string'
+      ? input.split(/[,\s+|/]+/).filter(Boolean).map((item) => Number(item))
+      : []
+  return values.filter((item) => Number.isInteger(item) && item >= 0 && item <= 9).slice(0, expected)
+}
+
 function compareIssueDesc(a: DrawRecord, b: DrawRecord) {
   return Number(b.issue) - Number(a.issue)
 }
@@ -353,4 +367,23 @@ function isStale(date?: string, maxAgeDays = 45) {
   if (!date) return true
   const diff = Date.now() - new Date(`${date}T00:00:00`).getTime()
   return diff > 1000 * 60 * 60 * 24 * maxAgeDays
+}
+
+function buildDigitDemoDraws(config: LotteryConfig): DrawRecord[] {
+  return Array.from({ length: 100 }, (_, index) => {
+    const seed = 20260717 + index * 7919
+    const digits = Array.from({ length: config.count }, (_, position) => (seed + position * 37 + index * index) % 10)
+    const date = new Date(Date.now() - index * 86400000 * 1.15).toISOString().slice(0, 10)
+    return {
+      issue: String(26180 - index),
+      date,
+      week: getWeek(date),
+      front: digits,
+      back: [],
+      sales: null,
+      firstPrize: null,
+      pool: null,
+      source: '内置演示数据',
+    }
+  })
 }

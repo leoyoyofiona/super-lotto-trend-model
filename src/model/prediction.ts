@@ -1,5 +1,6 @@
 import type { DrawFeatures, DrawRecord, ModelResult, NumberStat, PredictionTicket } from '../types'
 import { getAcValue, percentile, sum } from './features'
+import type { LotteryConfig } from '../data/lotteries'
 
 const STRATEGIES = [
   { name: '智能推荐', hot: 0.46, omission: 0.34, momentum: 0.2, coldBias: 0.06 },
@@ -15,7 +16,9 @@ export function buildPredictions(
   frontStats: NumberStat[],
   backStats: NumberStat[],
   seed: number,
+  config?: LotteryConfig,
 ): ModelResult {
+  if (config?.mode === 'digits') return buildDigitPredictions(draws, frontStats, seed, config)
   const frontSums = features.map((feature) => feature.frontSum)
   const lowSum = percentile(frontSums, 0.18) || 70
   const highSum = percentile(frontSums, 0.82) || 145
@@ -60,6 +63,30 @@ export function buildPredictions(
       '彩票开奖具有强随机性，任何模型都不能保证命中；本结果只适合做号码筛选和复盘参考。',
     ],
   }
+}
+
+function buildDigitPredictions(_draws: DrawRecord[], stats: NumberStat[], seed: number, config: LotteryConfig): ModelResult {
+  const tickets = STRATEGIES.map((strategy, index) => {
+    const random = mulberry32(seed + index * 1009)
+    const scored = stats.map((stat) => ({ stat, score: stat.heatScore * strategy.hot + Math.min(1.7, stat.omissionScore) * strategy.omission + random() * 0.08 }))
+    const digits = Array.from({ length: config.count }, () => {
+      const total = scored.reduce((acc, item) => acc + Math.max(0.02, item.score), 0)
+      let cursor = random() * total
+      for (const item of scored) {
+        cursor -= Math.max(0.02, item.score)
+        if (cursor <= 0) return item.stat.number
+      }
+      return scored[0]?.stat.number ?? 0
+    })
+    const sumValue = sum(digits)
+    const span = Math.max(...digits) - Math.min(...digits)
+    const repeated = digits.length - new Set(digits).size
+    const score = scored.filter((item) => digits.includes(item.stat.number)).reduce((acc, item) => acc + item.score, 0) / Math.max(1, digits.length)
+    const confidence = Number(clamp(48 + score * 18 + (repeated > 0 ? 3 : 0), 42, 76).toFixed(1))
+    return { id: index + 1, name: strategy.name, front: digits, back: [], score: Number(score.toFixed(2)), confidence, rationale: [`和值${sumValue}`, `跨度${span}`, `重复数字${repeated}位`], featureSummary: { oddEven: `${digits.filter((digit) => digit % 2).length}:${digits.filter((digit) => digit % 2 === 0).length}`, bigSmall: '-', frontSum: sumValue, frontSpan: span, zones: '-', ac: getAcValue(digits) } }
+  })
+  const confidence = tickets.reduce((acc, item) => acc + item.confidence, 0) / tickets.length
+  return { generatedAt: new Date().toLocaleString('zh-CN', { hour12: false }), seed, confidence: Number(confidence.toFixed(1)), riskLabel: confidence >= 68 ? '中等偏上' : confidence >= 58 ? '中等' : '偏高', tickets, notes: ['模型使用定位频次、遗漏、和值、跨度、重复和奇偶等特征加权。', '数字型彩票具有强随机性，结果只适合统计分析和复盘。'] }
 }
 
 interface PickConstraints {
