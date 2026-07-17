@@ -65,19 +65,13 @@ export function buildPredictions(
   }
 }
 
-function buildDigitPredictions(_draws: DrawRecord[], stats: NumberStat[], seed: number, config: LotteryConfig): ModelResult {
+function buildDigitPredictions(draws: DrawRecord[], stats: NumberStat[], seed: number, config: LotteryConfig): ModelResult {
   const tickets = STRATEGIES.map((strategy, index) => {
     const random = mulberry32(seed + index * 1009)
     const scored = stats.map((stat) => ({ stat, score: stat.heatScore * strategy.hot + Math.min(1.7, stat.omissionScore) * strategy.omission + random() * 0.08 }))
-    const digits = Array.from({ length: config.count }, () => {
-      const total = scored.reduce((acc, item) => acc + Math.max(0.02, item.score), 0)
-      let cursor = random() * total
-      for (const item of scored) {
-        cursor -= Math.max(0.02, item.score)
-        if (cursor <= 0) return item.stat.number
-      }
-      return scored[0]?.stat.number ?? 0
-    })
+    const digits = config.id === 'pl5'
+      ? Array.from({ length: config.count }, (_, position) => selectPositionDigit(draws, position, strategy, seed + index * 1009 + position * 131))
+      : Array.from({ length: config.count }, () => selectWeightedDigit(scored, random))
     const sumValue = sum(digits)
     const span = Math.max(...digits) - Math.min(...digits)
     const repeated = digits.length - new Set(digits).size
@@ -86,7 +80,31 @@ function buildDigitPredictions(_draws: DrawRecord[], stats: NumberStat[], seed: 
     return { id: index + 1, name: strategy.name, front: digits, back: [], score: Number(score.toFixed(2)), confidence, rationale: [`和值${sumValue}`, `跨度${span}`, `重复数字${repeated}位`], featureSummary: { oddEven: `${digits.filter((digit) => digit % 2).length}:${digits.filter((digit) => digit % 2 === 0).length}`, bigSmall: '-', frontSum: sumValue, frontSpan: span, zones: '-', ac: getAcValue(digits) } }
   })
   const confidence = tickets.reduce((acc, item) => acc + item.confidence, 0) / tickets.length
-  return { generatedAt: new Date().toLocaleString('zh-CN', { hour12: false }), seed, confidence: Number(confidence.toFixed(1)), riskLabel: confidence >= 68 ? '中等偏上' : confidence >= 58 ? '中等' : '偏高', tickets, notes: ['模型使用定位频次、遗漏、和值、跨度、重复和奇偶等特征加权。', '数字型彩票具有强随机性，结果只适合统计分析和复盘。'] }
+  return { generatedAt: new Date().toLocaleString('zh-CN', { hour12: false }), seed, confidence: Number(confidence.toFixed(1)), riskLabel: confidence >= 68 ? '中等偏上' : confidence >= 58 ? '中等' : '偏高', tickets, notes: [config.id === 'pl5' ? '排列5前3位与排列3共享定位逻辑，后2位独立分析生成。' : '模型使用定位频次、遗漏、和值、跨度、重复和奇偶等特征加权。', '数字型彩票具有强随机性，结果只适合统计分析和复盘。'] }
+}
+
+function selectWeightedDigit(scored: Array<{ stat: NumberStat; score: number }>, random: () => number) {
+  const total = scored.reduce((acc, item) => acc + Math.max(0.02, item.score), 0)
+  let cursor = random() * total
+  for (const item of scored) {
+    cursor -= Math.max(0.02, item.score)
+    if (cursor <= 0) return item.stat.number
+  }
+  return scored[0]?.stat.number ?? 0
+}
+
+function selectPositionDigit(draws: DrawRecord[], position: number, strategy: Strategy, seed: number) {
+  const random = mulberry32(seed)
+  const values = draws.map((draw) => draw.front[position]).filter((value) => Number.isInteger(value) && value >= 0 && value <= 9)
+  const recent = values.slice(0, 30)
+  const scored = Array.from({ length: 10 }, (_, digit) => {
+    const recentCount = recent.filter((value) => value === digit).length
+    let omission = values.findIndex((value) => value === digit)
+    if (omission < 0) omission = values.length
+    const score = (recentCount / Math.max(1, recent.length)) * strategy.hot + (1 + omission) * strategy.omission / Math.max(10, values.length) + random() * 0.08
+    return { stat: { number: digit } as NumberStat, score }
+  })
+  return selectWeightedDigit(scored, random)
 }
 
 interface PickConstraints {
