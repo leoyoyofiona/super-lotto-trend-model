@@ -150,7 +150,7 @@ function App() {
       <aside className="side-rail" aria-label="主导航">
         <div className="brand-mark">
           <span className="leo-logo" aria-label="LEO logo">LEO</span>
-            <strong>体彩分析</strong>
+            <strong>LEO 体彩分析</strong>
         </div>
         <nav>
           <a href="#disclaimer">
@@ -197,8 +197,8 @@ function App() {
           <div className="title-lockup">
             <span className="leo-logo leo-logo--topbar" aria-label="LEO logo">LEO</span>
             <div className="title-copy">
-              <h1>{lottery.name}走势预测</h1>
-              <p>{lottery.subtitle}</p>
+              <h1>LEO-超级大乐透+排列3+排列5+7星彩</h1>
+              <p>当前分析：{lottery.name} · {lottery.subtitle}</p>
             </div>
           </div>
           <div className="topbar-actions">
@@ -228,9 +228,19 @@ function App() {
                 event.currentTarget.value = ''
               }}
             />
-            <select className="lottery-select" value={lotteryId} onChange={(event) => setLotteryId(event.target.value as LotteryId)} aria-label="选择彩种">
-              {LOTTERIES.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
-            </select>
+            <div className="lottery-switcher" role="group" aria-label="选择彩种">
+              {LOTTERIES.map((item) => (
+                <button
+                  key={item.id}
+                  type="button"
+                  className={`lottery-switcher__button${item.id === lotteryId ? ' is-active' : ''}`}
+                  aria-pressed={item.id === lotteryId}
+                  onClick={() => setLotteryId(item.id)}
+                >
+                  {item.name}
+                </button>
+              ))}
+            </div>
             <button type="button" className="ghost-button" onClick={() => void refreshData()} disabled={loading}>
               <RefreshCcw size={17} className={loading ? 'spin' : undefined} />
               刷新开奖

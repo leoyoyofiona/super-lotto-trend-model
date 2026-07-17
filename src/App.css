@@ -152,6 +152,39 @@ main {
   flex-wrap: wrap;
 }
 
+.lottery-switcher {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid #bfdbfe;
+  border-radius: 10px;
+  background: #eff6ff;
+}
+
+.lottery-switcher__button {
+  min-height: 36px;
+  padding: 7px 12px;
+  border: 0;
+  border-radius: 7px;
+  color: #1e40af;
+  background: transparent;
+  font-size: 14px;
+  font-weight: 800;
+  white-space: nowrap;
+  transition: background-color 0.18s ease, color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.lottery-switcher__button:hover {
+  background: #dbeafe;
+}
+
+.lottery-switcher__button.is-active {
+  color: #ffffff;
+  background: #2563eb;
+  box-shadow: 0 5px 12px rgba(37, 99, 235, 0.24);
+}
+
 .primary-button,
 .ghost-button,
 .recalculate-secondary,
@@ -1125,6 +1158,16 @@ tbody tr:hover {
   .visitor-chip,
   .primary-button,
   .ghost-button {
+    width: 100%;
+  }
+
+  .lottery-switcher {
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .lottery-switcher__button {
     width: 100%;
   }
 
