@@ -162,7 +162,7 @@ function normalizeRecord(record: Record<string, unknown>, config: LotteryConfig)
   const issue = String(record.issue ?? record.qh ?? '').trim()
   const date = normalizeDate(record.date ?? record.kjsj ?? record.openTime)
   const rawFront = config.mode === 'digits'
-    ? normalizeDigitNumbers(record.front ?? record.kjjgqq ?? record.frontWinningNum, config.count)
+    ? normalizeDigitNumbers(record.front ?? record.kjjgqq ?? record.frontWinningNum, config.count, config.id === 'qxc' ? 14 : 9)
     : normalizeNumbers(record.front ?? record.kjjgqq ?? record.frontWinningNum, config.count, config.max)
   const front = config.mode === 'digits' ? rawFront : rawFront.sort((a, b) => a - b)
   const rawBack = config.mode === 'lotto'
@@ -197,9 +197,15 @@ function parseFjtcLive(payload: unknown, config: LotteryConfig): DrawRecord[] {
     .map((row) => {
       if (!row || typeof row !== 'object') return null
       const item = row as Record<string, unknown>
-      const rawNumbers = typeof item.lotteryDrawResult === 'string'
+      const parsedNumbers = typeof item.lotteryDrawResult === 'string'
         ? item.lotteryDrawResult.split(/\s+/).map((value) => Number(value)).filter((value) => Number.isInteger(value))
-        : normalizeNumbers(item.lotteryDrawResult, config.count + (config.mode === 'lotto' ? 2 : 0), config.mode === 'lotto' ? 35 : 9)
+        : normalizeDigitResult(item.lotteryDrawResult, config.id === 'qxc' ? 14 : config.mode === 'lotto' ? 35 : 9)
+      // 7星彩 is six ordinary digits plus one special digit. Some cached
+      // responses contain one duplicated leading value; keep the official
+      // seven-value sequence from the right-hand side.
+      const rawNumbers = config.id === 'qxc' && parsedNumbers.length > config.count
+        ? parsedNumbers.slice(-config.count)
+        : parsedNumbers
       if (config.mode === 'digits' && rawNumbers.length !== config.count) return null
       const front = config.mode === 'digits'
         ? rawNumbers.slice(0, config.count)
@@ -337,13 +343,20 @@ function normalizeDate(value: unknown) {
   return `${match[1]}-${match[2].padStart(2, '0')}-${match[3].padStart(2, '0')}`
 }
 
-function normalizeDigitNumbers(input: unknown, expected: number) {
+function normalizeDigitNumbers(input: unknown, expected: number, max = 9) {
   const values = Array.isArray(input)
     ? input.map((item) => Number(item))
     : typeof input === 'string'
       ? input.split(/[,\s+|/]+/).filter(Boolean).map((item) => Number(item))
       : []
-  return values.filter((item) => Number.isInteger(item) && item >= 0 && item <= 9).slice(0, expected)
+  return values.filter((item) => Number.isInteger(item) && item >= 0 && item <= max).slice(0, expected)
+}
+
+function normalizeDigitResult(input: unknown, max: number) {
+  if (!Array.isArray(input)) return []
+  return input
+    .map((item) => Number(item))
+    .filter((item) => Number.isInteger(item) && item >= 0 && item <= max)
 }
 
 function compareIssueDesc(a: DrawRecord, b: DrawRecord) {
