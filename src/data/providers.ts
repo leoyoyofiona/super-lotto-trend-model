@@ -25,16 +25,29 @@ export async function loadDraws(config: LotteryConfig): Promise<{ draws: DrawRec
         termLimits: '0',
         t: String(Date.now()),
       })
-      const response = await fetch(`${source}?${params.toString()}`, { cache: 'no-store' })
-      if (!response.ok) throw new Error(`${source} ${response.status}`)
-      const payload = await response.json()
-      const draws = parseFjtcLive(payload, config)
+      const latestParams = new URLSearchParams(params)
+      latestParams.set('limit', '5')
+      latestParams.set('pageSize', '5')
+      latestParams.set('t', String(Date.now() + 1))
+      const responses = await Promise.allSettled([
+        fetch(`${source}?${params.toString()}`, { cache: 'no-store' }),
+        fetch(`${source}?${latestParams.toString()}`, { cache: 'no-store' }),
+      ])
+      const payloads = await Promise.all(
+        responses.map(async (result) => {
+          if (result.status === 'rejected' || !result.value.ok) return null
+          return result.value.json()
+        }),
+      )
+      const draws = mergeDraws(
+        payloads.flatMap((payload) => payload ? parseFjtcLive(payload, config) : []),
+      )
       if (draws.length >= 10) {
         const stale = isStale(draws[0]?.date, 7)
         return {
           draws,
           status: buildStatus(
-            source.startsWith('/fjtc') ? '福建体彩网实时开奖接口' : '福建体彩网实时开奖接口（直连）',
+            source.startsWith('/fjtc') ? '中国体育彩票官方开奖接口（福建体彩）' : '中国体育彩票官方开奖接口（直连）',
             draws,
             stale,
           ),
@@ -231,6 +244,10 @@ function parseFjtcLive(payload: unknown, config: LotteryConfig): DrawRecord[] {
     })
     .filter((item): item is DrawRecord => Boolean(item))
     .sort(compareIssueDesc)
+}
+
+function mergeDraws(draws: DrawRecord[]) {
+  return [...new Map(draws.map((draw) => [draw.issue, draw])).values()].sort(compareIssueDesc)
 }
 
 function parseZhcwStatic(payload: unknown, config: LotteryConfig): DrawRecord[] {

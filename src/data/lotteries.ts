@@ -45,7 +45,7 @@ export const LOTTERIES: LotteryConfig[] = [
   {
     id: 'qxc',
     name: '7星彩',
-    subtitle: '7位数字位置走势、和值、跨度、重复与定位冷热分析',
+    subtitle: '前六位数字 + 特别号码（0-14），和值、跨度、重复与定位冷热分析',
     apiType: 'qxc',
     gameNo: '04',
     count: 7,
