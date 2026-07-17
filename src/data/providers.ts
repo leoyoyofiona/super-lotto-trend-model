@@ -18,7 +18,7 @@ export async function loadDraws(config: LotteryConfig): Promise<{ draws: DrawRec
         limit: '100',
         so_start: '0',
         so_end: '0',
-        gameNo: config.id === 'dlt' ? '85' : '',
+        gameNo: config.gameNo,
         provinceId: '0',
         pageSize: '100',
         isVerify: '1',
@@ -279,7 +279,7 @@ function parseZhcwJsonpPayload(payload: unknown): DrawRecord[] {
         firstPrize: first?.awardMoney,
         firstPrizeCount: first?.awardNum,
         pool: item.prizePoolMoney,
-      }, { id: 'dlt', name: '超级大乐透', subtitle: '', apiType: 'dlt', count: 5, max: 35, mode: 'lotto' })
+      }, { id: 'dlt', name: '超级大乐透', subtitle: '', apiType: 'dlt', gameNo: '85', count: 5, max: 35, mode: 'lotto' })
     })
     .filter((item): item is DrawRecord => Boolean(item))
     .sort(compareIssueDesc) as DrawRecord[]
