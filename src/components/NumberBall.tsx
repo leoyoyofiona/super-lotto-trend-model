@@ -18,8 +18,8 @@ export function NumberBall({ value, tone = 'front', small = false }: NumberBallP
 export function BallGroup({ front, back, small = false }: { front: number[]; back: number[]; small?: boolean }) {
   return (
     <div className="ball-group">
-      {front.map((number) => (
-        <NumberBall key={`f-${number}`} value={number} tone="front" small={small} />
+      {front.map((number, index) => (
+        <NumberBall key={`f-${index}-${number}`} value={number} tone="front" small={small} />
       ))}
       {back.length > 0 && <span className="ball-divider" />}
       {back.map((number, index) => (
