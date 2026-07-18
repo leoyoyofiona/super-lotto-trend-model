@@ -32,7 +32,7 @@ import {
   percentile,
 } from './model/features'
 import { buildPredictionHitRows } from './model/backtest'
-import { buildPredictions } from './model/prediction'
+import { buildPredictions, type DigitPrefixMap } from './model/prediction'
 import type { DataStatus, DrawRecord } from './types'
 
 const initialStatus: DataStatus = {
@@ -62,6 +62,7 @@ function App() {
   const [visitorStats, setVisitorStats] = useState<VisitorStats | null>(null)
   const [loading, setLoading] = useState(true)
   const [recalcSeed, setRecalcSeed] = useState(20260627)
+  const [sharedDigitPrefixes, setSharedDigitPrefixes] = useState<DigitPrefixMap>({})
   const [chartWindow, setChartWindow] = useState(50)
   const [tableLimit, setTableLimit] = useState(30)
   const [notice, setNotice] = useState('')
@@ -129,9 +130,25 @@ function App() {
   const frontStats = useMemo(() => buildNumberStats(draws, 'front', lottery.max, lottery.mode === 'digits' ? 0 : 1), [draws, lottery])
   const backStats = useMemo(() => lottery.mode === 'lotto' ? buildNumberStats(draws, 'back') : [], [draws, lottery])
   const model = useMemo(
-    () => buildPredictions(draws, features, frontStats, backStats, recalcSeed, lottery),
-    [draws, features, frontStats, backStats, recalcSeed, lottery],
+    () => buildPredictions(draws, features, frontStats, backStats, recalcSeed, lottery, sharedDigitPrefixes),
+    [draws, features, frontStats, backStats, recalcSeed, lottery, sharedDigitPrefixes],
   )
+  useEffect(() => {
+    if (lottery.id !== 'pl3' && lottery.id !== 'pl5') return
+    setSharedDigitPrefixes((previous) => {
+      let changed = false
+      const next = { ...previous }
+      model.tickets.forEach((ticket) => {
+        const prefix = ticket.front.slice(0, 3)
+        const oldPrefix = next[ticket.name]
+        if (prefix.length === 3 && (!oldPrefix || oldPrefix.join(',') !== prefix.join(','))) {
+          next[ticket.name] = prefix
+          changed = true
+        }
+      })
+      return changed ? next : previous
+    })
+  }, [lottery.id, model])
   const hitRows = useMemo(
     () => buildPredictionHitRows(draws, tableLimit, recalcSeed, lottery),
     [draws, tableLimit, recalcSeed, lottery],

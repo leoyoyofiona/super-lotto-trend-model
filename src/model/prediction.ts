@@ -10,6 +10,8 @@ const STRATEGIES = [
   { name: '跨度约束', hot: 0.42, omission: 0.36, momentum: 0.22, coldBias: 0.08 },
 ]
 
+export type DigitPrefixMap = Record<string, number[]>
+
 export function buildPredictions(
   draws: DrawRecord[],
   features: DrawFeatures[],
@@ -17,8 +19,9 @@ export function buildPredictions(
   backStats: NumberStat[],
   seed: number,
   config?: LotteryConfig,
+  sharedDigitPrefixes?: DigitPrefixMap,
 ): ModelResult {
-  if (config?.mode === 'digits') return buildDigitPredictions(draws, frontStats, seed, config)
+  if (config?.mode === 'digits') return buildDigitPredictions(draws, frontStats, seed, config, sharedDigitPrefixes)
   const frontSums = features.map((feature) => feature.frontSum)
   const lowSum = percentile(frontSums, 0.18) || 70
   const highSum = percentile(frontSums, 0.82) || 145
@@ -65,13 +68,16 @@ export function buildPredictions(
   }
 }
 
-function buildDigitPredictions(draws: DrawRecord[], stats: NumberStat[], seed: number, config: LotteryConfig): ModelResult {
+function buildDigitPredictions(draws: DrawRecord[], stats: NumberStat[], seed: number, config: LotteryConfig, sharedDigitPrefixes?: DigitPrefixMap): ModelResult {
   const tickets = STRATEGIES.map((strategy, index) => {
     const random = mulberry32(seed + index * 1009)
     const scored = stats.map((stat) => ({ stat, score: stat.heatScore * strategy.hot + Math.min(1.7, stat.omissionScore) * strategy.omission + random() * 0.08 }))
+    const sharedPrefix = sharedDigitPrefixes?.[strategy.name]?.slice(0, 3)
     const digits = config.id === 'pl5'
-      ? Array.from({ length: config.count }, (_, position) => selectPositionDigit(draws, position, strategy, seed + index * 1009 + position * 131))
-      : Array.from({ length: config.count }, () => selectWeightedDigit(scored, random))
+      ? Array.from({ length: config.count }, (_, position) => position < 3 && sharedPrefix?.length === 3 ? sharedPrefix[position] : selectPositionDigit(draws, position, strategy, seed + index * 1009 + position * 131))
+      : config.id === 'pl3' && sharedPrefix?.length === 3
+        ? sharedPrefix
+        : Array.from({ length: config.count }, () => selectWeightedDigit(scored, random))
     const sumValue = sum(digits)
     const span = Math.max(...digits) - Math.min(...digits)
     const repeated = digits.length - new Set(digits).size
